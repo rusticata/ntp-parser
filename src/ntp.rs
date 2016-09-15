@@ -1,7 +1,7 @@
 use nom::{be_i8,be_u8};
 
 #[derive(Debug,PartialEq)]
-pub struct NtpPacket {
+pub struct NtpPacket<'a> {
     li: u8,
     version: u8,
     mode: u8,
@@ -16,7 +16,33 @@ pub struct NtpPacket {
     ts_orig:u64,
     ts_recv:u64,
     ts_xmit:u64,
+
+    extensions:Vec<NtpExtension<'a>>,
+
+    auth: Option<(u32,&'a[u8])>,
 }
+
+#[derive(Debug,PartialEq)]
+pub struct NtpExtension<'a> {
+    field_type: u16,
+    length: u16,
+    value: &'a[u8],
+    /*padding*/
+}
+
+named!(pub parse_ntp_extension<NtpExtension>,
+    chain!(
+        ty: u16!(true) ~
+        len: u16!(true) ~ // len includes the padding
+        data: take!(len),
+        || {
+            NtpExtension{
+                field_type:ty,
+                length:len,
+                value:data,
+            }
+        })
+);
 
 named!(pub parse_ntp<NtpPacket>,
    chain!(
@@ -33,7 +59,8 @@ named!(pub parse_ntp<NtpPacket>,
        tso: u64!(true) ~
        tsv: u64!(true) ~
        tsx: u64!(true) ~
-       // XXX other optional fields, See section 7.5 of [RFC5905] and [RFC7822]
+       // optional fields, See section 7.5 of [RFC5905] and [RFC7822]
+       ext: many0!(complete!(parse_ntp_extension)) ~
        // key ID and MAC
        auth: opt!(complete!(pair!(u32!(true),take!(16)))),
        || {
@@ -51,6 +78,8 @@ named!(pub parse_ntp<NtpPacket>,
                ts_orig:tso,
                ts_recv:tsv,
                ts_xmit:tsx,
+               extensions:ext,
+               auth:auth,
            }
    })
 );
@@ -87,6 +116,8 @@ fn test_ntp_packet1() {
         ts_orig:0,
         ts_recv:0,
         ts_xmit:14195914391047827090u64,
+        extensions:vec![],
+        auth:None,
     });
     let res = parse_ntp(&bytes);
     assert_eq!(res, expected);
