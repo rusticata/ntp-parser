@@ -7,7 +7,6 @@ pub struct NtpPacket<'a> {
     mode: u8,
     stratum: u8,
     poll: i8,
-    // to get the precision, use 2.0_f32.powf(ntp.precision)
     precision: i8,
     root_delay: u32,
     root_dispersion: u32,
@@ -20,6 +19,12 @@ pub struct NtpPacket<'a> {
     extensions:Vec<NtpExtension<'a>>,
 
     auth: Option<(u32,&'a[u8])>,
+}
+
+impl<'a> NtpPacket<'a> {
+    pub fn get_precision(&self) -> f32 {
+        2.0_f32.powf(self.precision as f32)
+    }
 }
 
 #[derive(Debug,PartialEq)]
