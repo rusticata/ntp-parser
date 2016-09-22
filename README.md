@@ -1,5 +1,7 @@
 # ntp-parser
 
+[![Build Status](https://travis-ci.org/rusticata/ntp-parser.svg?branch=master)](https://travis-ci.org/rusticata/ntp-parser)
+
 ## Overview
 
 ntp-parser is a parser for the NTP protocol.
