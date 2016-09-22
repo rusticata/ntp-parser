@@ -16,8 +16,7 @@ pub struct NtpPacket<'a> {
     ts_recv:u64,
     ts_xmit:u64,
 
-    extensions:Vec<NtpExtension<'a>>,
-
+    ext_and_auth:Option<(Vec<NtpExtension<'a>>, (u32, &'a[u8]))>,
     auth: Option<(u32,&'a[u8])>,
 }
 
@@ -49,6 +48,10 @@ named!(pub parse_ntp_extension<NtpExtension>,
         })
 );
 
+named!(pub parse_ntp_key_mac<(u32,&[u8])>,
+   complete!(pair!(u32!(true),take!(16)))
+);
+
 named!(pub parse_ntp<NtpPacket>,
    chain!(
        b0: bits!(
@@ -65,9 +68,9 @@ named!(pub parse_ntp<NtpPacket>,
        tsv: u64!(true) ~
        tsx: u64!(true) ~
        // optional fields, See section 7.5 of [RFC5905] and [RFC7822]
-       ext: many0!(complete!(parse_ntp_extension)) ~
-       // key ID and MAC
-       auth: opt!(complete!(pair!(u32!(true),take!(16)))),
+       // extensions, key ID and MAC
+       extn: opt!(complete!(pair!(many0!(complete!(parse_ntp_extension)),parse_ntp_key_mac))) ~
+       auth: opt!(parse_ntp_key_mac),
        || {
            NtpPacket {
                li:b0.0,
@@ -83,7 +86,7 @@ named!(pub parse_ntp<NtpPacket>,
                ts_orig:tso,
                ts_recv:tsv,
                ts_xmit:tsx,
-               extensions:ext,
+               ext_and_auth:extn,
                auth:auth,
            }
    })
@@ -121,10 +124,46 @@ fn test_ntp_packet1() {
         ts_orig:0,
         ts_recv:0,
         ts_xmit:14195914391047827090u64,
-        extensions:vec![],
+        ext_and_auth:None,
         auth:None,
     });
     let res = parse_ntp(&bytes);
     assert_eq!(res, expected);
 }
+
+static NTP_REQ2: &'static [u8] = &[
+    0x23, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0c, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0xcc, 0x25, 0xcc, 0x13, 0x2b, 0x02, 0x10, 0x00,
+    0x00, 0x00, 0x00, 0x01, 0x52, 0x80, 0x0c, 0x2b, 0x59, 0x00, 0x64, 0x66,
+    0x84, 0xf4, 0x4c, 0xa4, 0xee, 0xce, 0x12, 0xb8
+];
+
+#[test]
+fn test_ntp_packet2() {
+    let _ = env_logger::init();
+    let empty = &b""[..];
+    let bytes = NTP_REQ2;
+    let expected = IResult::Done(empty,NtpPacket{
+        li:0,
+        version:4,
+        mode:3,
+        stratum:0,
+        poll:0,
+        precision:0,
+        root_delay:12,
+        root_dispersion:0,
+        ref_id:0,
+        ts_ref:0,
+        ts_orig:0,
+        ts_recv:0,
+        ts_xmit:14710388140573593600,
+        ext_and_auth:None,
+        auth:Some((1,&bytes[52..])),
+    });
+    let res = parse_ntp(&bytes);
+    assert_eq!(res, expected);
+}
+
 }
