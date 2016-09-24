@@ -96,7 +96,6 @@ named!(pub parse_ntp<NtpPacket>,
 mod tests {
     use ntp::*;
     use nom::IResult;
-    extern crate env_logger;
 
 static NTP_REQ1: &'static [u8] = &[
     0xd9, 0x00, 0x0a, 0xfa, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x02, 0x90,
@@ -107,7 +106,6 @@ static NTP_REQ1: &'static [u8] = &[
 
 #[test]
 fn test_ntp_packet1() {
-    let _ = env_logger::init();
     let empty = &b""[..];
     let bytes = NTP_REQ1;
     let expected = IResult::Done(empty,NtpPacket{
@@ -142,7 +140,6 @@ static NTP_REQ2: &'static [u8] = &[
 
 #[test]
 fn test_ntp_packet2() {
-    let _ = env_logger::init();
     let empty = &b""[..];
     let bytes = NTP_REQ2;
     let expected = IResult::Done(empty,NtpPacket{
