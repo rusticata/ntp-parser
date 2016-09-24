@@ -1,4 +1,4 @@
-use nom::{be_i8,be_u8};
+use nom::{be_i8,be_u8,be_u16,be_u32,be_u64};
 
 #[derive(Debug,PartialEq)]
 pub struct NtpPacket<'a> {
@@ -36,8 +36,8 @@ pub struct NtpExtension<'a> {
 
 named!(pub parse_ntp_extension<NtpExtension>,
     chain!(
-        ty: u16!(true) ~
-        len: u16!(true) ~ // len includes the padding
+        ty: be_u16 ~
+        len: be_u16 ~ // len includes the padding
         data: take!(len),
         || {
             NtpExtension{
@@ -49,7 +49,7 @@ named!(pub parse_ntp_extension<NtpExtension>,
 );
 
 named!(pub parse_ntp_key_mac<(u32,&[u8])>,
-   complete!(pair!(u32!(true),take!(16)))
+   complete!(pair!(be_u32,take!(16)))
 );
 
 named!(pub parse_ntp<NtpPacket>,
@@ -60,13 +60,13 @@ named!(pub parse_ntp<NtpPacket>,
        st: be_u8 ~
        pl: be_i8 ~
        pr: be_i8 ~
-       rde: u32!(true) ~
-       rdi: u32!(true) ~
-       rid: u32!(true) ~
-       tsr: u64!(true) ~
-       tso: u64!(true) ~
-       tsv: u64!(true) ~
-       tsx: u64!(true) ~
+       rde: be_u32 ~
+       rdi: be_u32 ~
+       rid: be_u32 ~
+       tsr: be_u64 ~
+       tso: be_u64 ~
+       tsv: be_u64 ~
+       tsx: be_u64 ~
        // optional fields, See section 7.5 of [RFC5905] and [RFC7822]
        // extensions, key ID and MAC
        extn: opt!(complete!(pair!(many0!(complete!(parse_ntp_extension)),parse_ntp_key_mac))) ~
