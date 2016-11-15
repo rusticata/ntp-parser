@@ -2,22 +2,22 @@ use nom::{be_i8,be_u8,be_u16,be_u32,be_u64};
 
 #[derive(Debug,PartialEq)]
 pub struct NtpPacket<'a> {
-    li: u8,
-    version: u8,
-    mode: u8,
-    stratum: u8,
-    poll: i8,
-    precision: i8,
-    root_delay: u32,
-    root_dispersion: u32,
-    ref_id:u32,
-    ts_ref:u64,
-    ts_orig:u64,
-    ts_recv:u64,
-    ts_xmit:u64,
+    pub li: u8,
+    pub version: u8,
+    pub mode: u8,
+    pub stratum: u8,
+    pub poll: i8,
+    pub precision: i8,
+    pub root_delay: u32,
+    pub root_dispersion: u32,
+    pub ref_id:u32,
+    pub ts_ref:u64,
+    pub ts_orig:u64,
+    pub ts_recv:u64,
+    pub ts_xmit:u64,
 
-    ext_and_auth:Option<(Vec<NtpExtension<'a>>, (u32, &'a[u8]))>,
-    auth: Option<(u32,&'a[u8])>,
+    pub ext_and_auth:Option<(Vec<NtpExtension<'a>>, (u32, &'a[u8]))>,
+    pub auth: Option<(u32,&'a[u8])>,
 }
 
 impl<'a> NtpPacket<'a> {
@@ -28,9 +28,9 @@ impl<'a> NtpPacket<'a> {
 
 #[derive(Debug,PartialEq)]
 pub struct NtpExtension<'a> {
-    field_type: u16,
-    length: u16,
-    value: &'a[u8],
+    pub field_type: u16,
+    pub length: u16,
+    pub value: &'a[u8],
     /*padding*/
 }
 
