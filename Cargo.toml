@@ -5,7 +5,7 @@ keywords = ["NTP","time","protocol","parser","nom"]
 homepage = "https://github.com/rusticata/ntp-parser"
 repository = "https://github.com/rusticata/ntp-parser.git"
 name = "ntp-parser"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Pierre Chifflier <chifflier@wzdftpd.net>"]
 
 [dependencies]
