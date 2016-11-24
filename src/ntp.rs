@@ -35,17 +35,17 @@ pub struct NtpExtension<'a> {
 }
 
 named!(pub parse_ntp_extension<NtpExtension>,
-    chain!(
-        ty: be_u16 ~
-        len: be_u16 ~ // len includes the padding
-        data: take!(len),
-        || {
+    do_parse!(
+           ty: be_u16
+        >> len: be_u16 // len includes the padding
+        >> data: take!(len)
+        >> (
             NtpExtension{
                 field_type:ty,
                 length:len,
                 value:data,
             }
-        })
+        ))
 );
 
 named!(pub parse_ntp_key_mac<(u32,&[u8])>,
@@ -53,25 +53,25 @@ named!(pub parse_ntp_key_mac<(u32,&[u8])>,
 );
 
 named!(pub parse_ntp<NtpPacket>,
-   chain!(
-       b0: bits!(
-            tuple!(take_bits!(u8,2),take_bits!(u8,3),take_bits!(u8,3))
-           ) ~
-       st: be_u8 ~
-       pl: be_i8 ~
-       pr: be_i8 ~
-       rde: be_u32 ~
-       rdi: be_u32 ~
-       rid: be_u32 ~
-       tsr: be_u64 ~
-       tso: be_u64 ~
-       tsv: be_u64 ~
-       tsx: be_u64 ~
+   do_parse!(
+          b0: bits!(
+                  tuple!(take_bits!(u8,2),take_bits!(u8,3),take_bits!(u8,3))
+              )
+       >> st: be_u8
+       >> pl: be_i8
+       >> pr: be_i8
+       >> rde: be_u32
+       >> rdi: be_u32
+       >> rid: be_u32
+       >> tsr: be_u64
+       >> tso: be_u64
+       >> tsv: be_u64
+       >> tsx: be_u64
        // optional fields, See section 7.5 of [RFC5905] and [RFC7822]
        // extensions, key ID and MAC
-       extn: opt!(complete!(pair!(many0!(complete!(parse_ntp_extension)),parse_ntp_key_mac))) ~
-       auth: opt!(parse_ntp_key_mac),
-       || {
+       >> extn: opt!(complete!(pair!(many0!(complete!(parse_ntp_extension)),parse_ntp_key_mac)))
+       >> auth: opt!(parse_ntp_key_mac)
+       >> (
            NtpPacket {
                li:b0.0,
                version:b0.1,
@@ -89,7 +89,7 @@ named!(pub parse_ntp<NtpPacket>,
                ext_and_auth:extn,
                auth:auth,
            }
-   })
+   ))
 );
 
 #[cfg(test)]
