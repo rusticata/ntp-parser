@@ -14,8 +14,15 @@ pub enum NtpMode {
 }
 
 impl NtpMode {
-    pub fn new(m: u8) -> NtpMode {
-        unsafe { transmute(m) }
+    pub unsafe fn new_unchecked(m: u8) -> NtpMode {
+        transmute(m)
+    }
+    pub fn new(m: u8) -> Option<NtpMode> {
+        if (m & 0xF8u8) == 0 {
+            unsafe { Some(NtpMode::new_unchecked(m)) }
+        } else {
+            None
+        }
     }
 }
 
@@ -94,7 +101,7 @@ named!(pub parse_ntp<NtpPacket>,
            NtpPacket {
                li:b0.0,
                version:b0.1,
-               mode:NtpMode::new(b0.2),
+               mode:unsafe { NtpMode::new_unchecked(b0.2) },
                stratum:st,
                poll:pl,
                precision:pr,
