@@ -137,7 +137,7 @@ fn test_ntp_packet1() {
     let expected = IResult::Done(empty,NtpPacket{
         li:3,
         version:3,
-        mode:NtpMode::new(1),
+        mode:NtpMode::new(1).unwrap(),
         stratum:0,
         poll:10,
         precision:-6,
@@ -171,7 +171,7 @@ fn test_ntp_packet2() {
     let expected = IResult::Done(empty,NtpPacket{
         li:0,
         version:4,
-        mode:NtpMode::new(3),
+        mode:NtpMode::new(3).unwrap(),
         stratum:0,
         poll:0,
         precision:0,
