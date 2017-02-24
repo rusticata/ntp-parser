@@ -1,6 +1,8 @@
 # ntp-parser
 
+[![LICENSE](https://img.shields.io/badge/License-LGPL%20v2.1-blue.svg)](LICENSE)
 [![Build Status](https://travis-ci.org/rusticata/ntp-parser.svg?branch=master)](https://travis-ci.org/rusticata/ntp-parser)
+[![Crates.io Version](https://img.shields.io/crates/v/ntp-parser.svg)](https://crates.io/crates/ntp-parser)
 
 ## Overview
 
