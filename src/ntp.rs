@@ -1,5 +1,22 @@
 use nom::{be_i8,be_u8,be_u16,be_u32,be_u64};
 
+use enum_primitive::FromPrimitive;
+
+enum_from_primitive! {
+#[derive(Debug,PartialEq)]
+#[repr(u8)]
+pub enum NtpMode {
+    Reserved = 0,
+    SymmetricActive = 1,
+    SymmetricPassive = 2,
+    Client = 3,
+    Server = 4,
+    Broadcast = 5,
+    NtpControlMessage = 6,
+    Private = 7,
+}
+}
+
 #[derive(Debug,PartialEq)]
 pub struct NtpPacket<'a> {
     pub li: u8,
@@ -21,6 +38,11 @@ pub struct NtpPacket<'a> {
 }
 
 impl<'a> NtpPacket<'a> {
+    #[inline]
+    pub fn get_mode(&self) -> Option<NtpMode> {
+        NtpMode::from_u8(self.mode)
+    }
+
     pub fn get_precision(&self) -> f32 {
         2.0_f32.powf(self.precision as f32)
     }
