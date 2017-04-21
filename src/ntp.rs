@@ -1,4 +1,30 @@
 use nom::{be_i8,be_u8,be_u16,be_u32,be_u64};
+use std::mem::transmute;
+
+#[derive(Debug,PartialEq,Eq)]
+pub enum NtpMode {
+    Reserved = 0,
+    SymmetricActive = 1,
+    SymmetricPassive = 2,
+    Client = 3,
+    Server = 4,
+    Broadcast = 5,
+    NtpControlMessage = 6,
+    Private = 7,
+}
+
+impl NtpMode {
+    pub unsafe fn new_unchecked(m: u8) -> NtpMode {
+        transmute(m)
+    }
+    pub fn new(m: u8) -> Option<NtpMode> {
+        if (m & 0xF8u8) == 0 {
+            unsafe { Some(NtpMode::new_unchecked(m)) }
+        } else {
+            None
+        }
+    }
+}
 
 use enum_primitive::FromPrimitive;
 
@@ -21,7 +47,7 @@ pub enum NtpMode {
 pub struct NtpPacket<'a> {
     pub li: u8,
     pub version: u8,
-    pub mode: u8,
+    pub mode: NtpMode,
     pub stratum: u8,
     pub poll: i8,
     pub precision: i8,
@@ -97,7 +123,7 @@ named!(pub parse_ntp<NtpPacket>,
            NtpPacket {
                li:b0.0,
                version:b0.1,
-               mode:b0.2,
+               mode:unsafe { NtpMode::new_unchecked(b0.2) },
                stratum:st,
                poll:pl,
                precision:pr,
@@ -133,7 +159,7 @@ fn test_ntp_packet1() {
     let expected = IResult::Done(empty,NtpPacket{
         li:3,
         version:3,
-        mode:1,
+        mode:NtpMode::new(1).unwrap(),
         stratum:0,
         poll:10,
         precision:-6,
@@ -167,7 +193,7 @@ fn test_ntp_packet2() {
     let expected = IResult::Done(empty,NtpPacket{
         li:0,
         version:4,
-        mode:3,
+        mode:NtpMode::new(3).unwrap(),
         stratum:0,
         poll:0,
         precision:0,
