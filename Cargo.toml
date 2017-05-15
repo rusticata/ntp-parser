@@ -10,7 +10,7 @@ authors = ["Pierre Chifflier <chifflier@wzdftpd.net>"]
 categories = ["parsing"]
 
 [dependencies]
-nom = "^2.0"
+nom = "^3"
 enum_primitive = "0.1"
 
 [badges]
