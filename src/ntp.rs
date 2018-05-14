@@ -51,14 +51,14 @@ pub struct NtpExtension<'a> {
 
 named!(pub parse_ntp_extension<NtpExtension>,
     do_parse!(
-           ty: be_u16
-        >> len: be_u16 // len includes the padding
-        >> data: take!(len)
-        >> (
+        field_type: be_u16 >>
+        length:     be_u16 >> // len includes the padding
+        value:      take!(length) >>
+        (
             NtpExtension{
-                field_type:ty,
-                length:len,
-                value:data,
+                field_type,
+                length,
+                value,
             }
         ))
 );
@@ -69,40 +69,40 @@ named!(pub parse_ntp_key_mac<(u32,&[u8])>,
 
 named!(pub parse_ntp<NtpPacket>,
    do_parse!(
-          b0: bits!(
-                  tuple!(take_bits!(u8,2),take_bits!(u8,3),take_bits!(u8,3))
-              )
-       >> st: be_u8
-       >> pl: be_i8
-       >> pr: be_i8
-       >> rde: be_u32
-       >> rdi: be_u32
-       >> rid: be_u32
-       >> tsr: be_u64
-       >> tso: be_u64
-       >> tsv: be_u64
-       >> tsx: be_u64
+       b0:              bits!(
+                            tuple!(take_bits!(u8,2),take_bits!(u8,3),take_bits!(u8,3))
+                        ) >>
+       stratum:         be_u8 >>
+       poll:            be_i8 >>
+       precision:       be_i8 >>
+       root_delay:      be_u32 >>
+       root_dispersion: be_u32 >>
+       ref_id:          be_u32 >>
+       ts_ref:          be_u64 >>
+       ts_orig:         be_u64 >>
+       ts_recv:         be_u64 >>
+       ts_xmit:         be_u64 >>
        // optional fields, See section 7.5 of [RFC5905] and [RFC7822]
        // extensions, key ID and MAC
-       >> extn: opt!(complete!(pair!(many0!(complete!(parse_ntp_extension)),parse_ntp_key_mac)))
-       >> auth: opt!(parse_ntp_key_mac)
-       >> (
+       ext_and_auth:    opt!(complete!(pair!(many0!(complete!(parse_ntp_extension)),parse_ntp_key_mac))) >>
+       auth: opt!(parse_ntp_key_mac) >>
+       (
            NtpPacket {
                li:b0.0,
                version:b0.1,
                mode:NtpMode(b0.2),
-               stratum:st,
-               poll:pl,
-               precision:pr,
-               root_delay:rde,
-               root_dispersion:rdi,
-               ref_id:rid,
-               ts_ref:tsr,
-               ts_orig:tso,
-               ts_recv:tsv,
-               ts_xmit:tsx,
-               ext_and_auth:extn,
-               auth:auth,
+               stratum,
+               poll,
+               precision,
+               root_delay,
+               root_dispersion,
+               ref_id,
+               ts_ref,
+               ts_orig,
+               ts_recv,
+               ts_xmit,
+               ext_and_auth,
+               auth,
            }
    ))
 );
