@@ -1,6 +1,6 @@
 [package]
 description = "Parser for the NTP protocol"
-license = "LGPL-2.1+"
+license = "MIT/Apache-2.0"
 keywords = ["NTP","time","protocol","parser","nom"]
 homepage = "https://github.com/rusticata/ntp-parser"
 repository = "https://github.com/rusticata/ntp-parser.git"
