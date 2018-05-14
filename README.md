@@ -9,6 +9,13 @@
 
 ntp-parser is a parser for the NTP protocol.
 
+## Changes
+
+### 0.2.0
+
+- Use newtype for NtpMode, remove enum_primitive
+- Switch license to MIT + APLv2
+
 ## License
 
 Licensed under either of

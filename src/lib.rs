@@ -5,9 +5,6 @@
         unused_import_braces, unused_qualifications)]
 
 #[macro_use]
-extern crate enum_primitive;
-
-#[macro_use]
 extern crate nom;
 
 pub use ntp::*;

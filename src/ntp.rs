@@ -1,27 +1,25 @@
 use nom::{be_i8,be_u8,be_u16,be_u32,be_u64};
 
-use enum_primitive::FromPrimitive;
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct NtpMode(pub u8);
 
-enum_from_primitive! {
-#[derive(Debug,PartialEq)]
-#[repr(u8)]
-pub enum NtpMode {
-    Reserved = 0,
-    SymmetricActive = 1,
-    SymmetricPassive = 2,
-    Client = 3,
-    Server = 4,
-    Broadcast = 5,
-    NtpControlMessage = 6,
-    Private = 7,
-}
+#[allow(non_upper_case_globals)]
+impl NtpMode {
+    pub const Reserved          : NtpMode = NtpMode(0);
+    pub const SymmetricActive   : NtpMode = NtpMode(1);
+    pub const SymmetricPassive  : NtpMode = NtpMode(2);
+    pub const Client            : NtpMode = NtpMode(3);
+    pub const Server            : NtpMode = NtpMode(4);
+    pub const Broadcast         : NtpMode = NtpMode(5);
+    pub const NtpControlMessage : NtpMode = NtpMode(6);
+    pub const Private           : NtpMode = NtpMode(7);
 }
 
 #[derive(Debug,PartialEq)]
 pub struct NtpPacket<'a> {
     pub li: u8,
     pub version: u8,
-    pub mode: u8,
+    pub mode: NtpMode,
     pub stratum: u8,
     pub poll: i8,
     pub precision: i8,
@@ -38,11 +36,6 @@ pub struct NtpPacket<'a> {
 }
 
 impl<'a> NtpPacket<'a> {
-    #[inline]
-    pub fn get_mode(&self) -> Option<NtpMode> {
-        NtpMode::from_u8(self.mode)
-    }
-
     pub fn get_precision(&self) -> f32 {
         2.0_f32.powf(self.precision as f32)
     }
@@ -97,7 +90,7 @@ named!(pub parse_ntp<NtpPacket>,
            NtpPacket {
                li:b0.0,
                version:b0.1,
-               mode:b0.2,
+               mode:NtpMode(b0.2),
                stratum:st,
                poll:pl,
                precision:pr,
@@ -133,7 +126,7 @@ fn test_ntp_packet1() {
     let expected = IResult::Done(empty,NtpPacket{
         li:3,
         version:3,
-        mode:1,
+        mode:NtpMode::SymmetricActive,
         stratum:0,
         poll:10,
         precision:-6,
@@ -167,7 +160,7 @@ fn test_ntp_packet2() {
     let expected = IResult::Done(empty,NtpPacket{
         li:0,
         version:4,
-        mode:3,
+        mode:NtpMode::Client,
         stratum:0,
         poll:0,
         precision:0,
