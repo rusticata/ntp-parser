@@ -10,7 +10,7 @@ authors = ["Pierre Chifflier <chifflier@wzdftpd.net>"]
 categories = ["parsing"]
 
 [dependencies]
-nom = "^3"
+nom = "4.0"
 
 [badges]
 travis-ci = { repository = "rusticata/ntp-parser" }
