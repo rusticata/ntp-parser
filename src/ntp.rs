@@ -1,4 +1,4 @@
-use nom::{be_i8,be_u8,be_u16,be_u32,be_u64,ErrorKind,IResult};
+use nom::{be_i8,be_u8,be_u16,be_u32,be_u64,Err,ErrorKind,IResult};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct NtpMode(pub u8);
@@ -88,20 +88,20 @@ fn parse_ntp_mac(i: &[u8]) -> IResult<&[u8],NtpMac> {
 //               if ==  0, nothing
 //               else      error
 fn parse_extensions_and_auth(i:&[u8]) -> IResult<&[u8],(Vec<NtpExtension>,Option<NtpMac>)> {
-    if i.is_empty() { IResult::Done(i,(Vec::new(),None)) }
+    if i.is_empty() { Ok((i,(Vec::new(),None))) }
     else if i.len() == 20 {
-        parse_ntp_mac(i).map(|m| (Vec::new(),Some(m)))
+        parse_ntp_mac(i).map(|(rem,m)| (rem,(Vec::new(),Some(m))))
     }
     else if i.len() > 20 {
         do_parse!(
             i,
             v: many1!(complete!(parse_ntp_extension)) >>
             m: parse_ntp_mac >>
-               eof!() >>
+               // eof!() >>
             ( (v,Some(m)) )
         )
     } else {
-        IResult::Error(error_code!(ErrorKind::Eof))
+        Err(Err::Error(error_position!(i, ErrorKind::Eof)))
     }
 }
 
@@ -145,7 +145,6 @@ named!(pub parse_ntp<NtpPacket>,
 #[cfg(test)]
 mod tests {
     use ntp::*;
-    use nom::IResult;
 
 static NTP_REQ1: &'static [u8] = &[
     0xd9, 0x00, 0x0a, 0xfa, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x02, 0x90,
@@ -158,7 +157,7 @@ static NTP_REQ1: &'static [u8] = &[
 fn test_ntp_packet1() {
     let empty = &b""[..];
     let bytes = NTP_REQ1;
-    let expected = IResult::Done(empty,NtpPacket{
+    let expected = NtpPacket{
         li:3,
         version:3,
         mode:NtpMode::SymmetricActive,
@@ -174,9 +173,9 @@ fn test_ntp_packet1() {
         ts_xmit:14195914391047827090u64,
         extensions:Vec::new(),
         auth:None,
-    });
+    };
     let res = parse_ntp(&bytes);
-    assert_eq!(res, expected);
+    assert_eq!(res, Ok((empty,expected)));
 }
 
 static NTP_REQ2: &'static [u8] = &[
@@ -192,7 +191,7 @@ static NTP_REQ2: &'static [u8] = &[
 fn test_ntp_packet2() {
     let empty = &b""[..];
     let bytes = NTP_REQ2;
-    let expected = IResult::Done(empty,NtpPacket{
+    let expected = NtpPacket{
         li:0,
         version:4,
         mode:NtpMode::Client,
@@ -208,9 +207,9 @@ fn test_ntp_packet2() {
         ts_xmit:14710388140573593600,
         extensions:Vec::new(),
         auth:Some(NtpMac{key_id:1,mac:&bytes[52..]}),
-    });
+    };
     let res = parse_ntp(&bytes);
-    assert_eq!(res, expected);
+    assert_eq!(res, Ok((empty,expected)));
 }
 
 }
