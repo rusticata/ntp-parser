@@ -95,7 +95,10 @@ fn parse_extensions_and_auth(i:&[u8]) -> IResult<&[u8],(Vec<NtpExtension>,Option
     else if i.len() > 20 {
         do_parse!(
             i,
-            v: many1!(complete!(parse_ntp_extension)) >>
+            v: flat_map!(
+                take!(i.len() - 20),
+                many1!(complete!(parse_ntp_extension))
+               ) >>
             m: parse_ntp_mac >>
                eof!() >>
             ( (v,Some(m)) )
@@ -155,7 +158,7 @@ static NTP_REQ1: &'static [u8] = &[
 ];
 
 #[test]
-fn test_ntp_packet1() {
+fn test_ntp_packet_simple() {
     let empty = &b""[..];
     let bytes = NTP_REQ1;
     let expected = IResult::Done(empty,NtpPacket{
@@ -189,7 +192,7 @@ static NTP_REQ2: &'static [u8] = &[
 ];
 
 #[test]
-fn test_ntp_packet2() {
+fn test_ntp_packet_mac() {
     let empty = &b""[..];
     let bytes = NTP_REQ2;
     let expected = IResult::Done(empty,NtpPacket{
@@ -208,6 +211,45 @@ fn test_ntp_packet2() {
         ts_xmit:14710388140573593600,
         extensions:Vec::new(),
         auth:Some(NtpMac{key_id:1,mac:&bytes[52..]}),
+    });
+    let res = parse_ntp(&bytes);
+    assert_eq!(res, expected);
+}
+
+static NTP_REQ2B: &'static [u8] = &[
+    0x23, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0c, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0xcc, 0x25, 0xcc, 0x13, 0x2b, 0x02, 0x10, 0x00,
+    0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x01, 0x52, 0x80, 0x0c, 0x2b,
+    0x59, 0x00, 0x64, 0x66, 0x84, 0xf4, 0x4c, 0xa4, 0xee, 0xce, 0x12, 0xb8,
+];
+
+#[test]
+fn test_ntp_packet_extension() {
+    let empty = &b""[..];
+    let bytes = NTP_REQ2B;
+    let expected = IResult::Done(empty,NtpPacket{
+        li:0,
+        version:4,
+        mode:NtpMode::Client,
+        stratum:0,
+        poll:0,
+        precision:0,
+        root_delay:12,
+        root_dispersion:0,
+        ref_id:0,
+        ts_ref:0,
+        ts_orig:0,
+        ts_recv:0,
+        ts_xmit:14710388140573593600,
+        extensions:vec![NtpExtension{
+            field_type: 0,
+            length: 0,
+            value: empty
+        }],
+        auth:Some(NtpMac{key_id:1,mac:&bytes[56..]}),
     });
     let res = parse_ntp(&bytes);
     assert_eq!(res, expected);
