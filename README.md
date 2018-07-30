@@ -11,6 +11,10 @@ ntp-parser is a parser for the NTP protocol.
 
 ## Changes
 
+### 0.2.1
+
+- Fix parsing of extensions
+
 ### 0.2.0
 
 - Use newtype for NtpMode, remove enum_primitive
