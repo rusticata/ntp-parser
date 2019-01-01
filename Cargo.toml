@@ -5,12 +5,12 @@ keywords = ["NTP","time","protocol","parser","nom"]
 homepage = "https://github.com/rusticata/ntp-parser"
 repository = "https://github.com/rusticata/ntp-parser.git"
 name = "ntp-parser"
-version = "0.2.1"
+version = "0.3.0"
 authors = ["Pierre Chifflier <chifflier@wzdftpd.net>"]
 categories = ["parsing"]
 
 [dependencies]
-nom = "4.0"
+nom = "4.1"
 
 [badges]
 travis-ci = { repository = "rusticata/ntp-parser" }
