@@ -7,5 +7,5 @@
 #[macro_use]
 extern crate nom;
 
-pub use ntp::*;
+pub use crate::ntp::*;
 pub mod ntp;
