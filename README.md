@@ -11,6 +11,10 @@ ntp-parser is a parser for the NTP protocol.
 
 ## Changes
 
+### 0.3.0
+
+- Upgrade to nom 4
+
 ### 0.2.1
 
 - Fix parsing of extensions
