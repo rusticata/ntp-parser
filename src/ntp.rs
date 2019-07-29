@@ -1,4 +1,6 @@
-use nom::{be_i8,be_u8,be_u16,be_u32,be_u64,Err,ErrorKind,IResult};
+use nom::{Err, IResult};
+use nom::error::ErrorKind;
+use nom::number::streaming::{be_i8, be_u8, be_u16, be_u32, be_u64};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct NtpMode(pub u8);
@@ -111,7 +113,7 @@ fn parse_extensions_and_auth(i:&[u8]) -> IResult<&[u8],(Vec<NtpExtension>,Option
 named!(pub parse_ntp<NtpPacket>,
    do_parse!(
        b0:              bits!(
-                            tuple!(take_bits!(u8,2),take_bits!(u8,3),take_bits!(u8,3))
+                            tuple!(take_bits!(2u8),take_bits!(3u8),take_bits!(3u8))
                         ) >>
        stratum:         be_u8 >>
        poll:            be_i8 >>

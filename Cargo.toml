@@ -12,7 +12,7 @@ categories = ["network-programming", "parser-implementations"]
 edition = "2018"
 
 [dependencies]
-nom = "4.1"
+nom = "5.0"
 
 [badges]
 travis-ci = { repository = "rusticata/ntp-parser" }
