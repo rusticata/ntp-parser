@@ -4,8 +4,5 @@
         unstable_features,
         unused_import_braces, unused_qualifications)]
 
-#[macro_use]
-extern crate nom;
-
 pub use ntp::*;
 pub mod ntp;

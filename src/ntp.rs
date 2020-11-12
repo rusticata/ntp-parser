@@ -1,6 +1,12 @@
-use nom::{Err, IResult};
-use nom::error::ErrorKind;
+pub use nom::{Err, IResult};
+use nom::bits::bits;
+use nom::bits::streaming::take as b_take;
+use nom::bytes::streaming::take;
+use nom::combinator::{complete, map_parser};
+use nom::error::{make_error, Error, ErrorKind};
+use nom::multi::many1;
 use nom::number::streaming::{be_i8, be_u8, be_u16, be_u32, be_u64};
+use nom::sequence::tuple;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct NtpMode(pub u8);
@@ -57,29 +63,22 @@ pub struct NtpMac<'a> {
     pub mac:    &'a[u8],
 }
 
-pub fn parse_ntp_extension(i: &[u8]) -> IResult<&[u8],NtpExtension> {
-    do_parse!(
-        i,
-        field_type: be_u16 >>
-        length:     be_u16 >> // len includes the padding
-        value:      take!(length) >>
-        (
-            NtpExtension{
-                field_type,
-                length,
-                value,
-            }
-        )
-    )
+pub fn parse_ntp_extension(i: &[u8]) -> IResult<&[u8], NtpExtension> {
+    let (i, field_type) = be_u16(i)?;
+    let (i, length) = be_u16(i)?;
+    let (i, value) = take(length)(i)?;
+    let ext = NtpExtension {
+        field_type,
+        length,
+        value,
+    };
+    Ok((i, ext))
 }
 
 fn parse_ntp_mac(i: &[u8]) -> IResult<&[u8],NtpMac> {
-   do_parse!(
-       i,
-       key_id: be_u32 >>
-       mac:    take!(16) >>
-       ( NtpMac{ key_id, mac} )
-   )
+    let (i, key_id) = be_u32(i)?;
+    let (i, mac) = take(16usize)(i)?;
+    Ok((i, NtpMac{ key_id, mac }))
 }
 
 // optional fields, See section 7.5 of [RFC5905] and [RFC7822]
@@ -95,63 +94,59 @@ fn parse_extensions_and_auth(i:&[u8]) -> IResult<&[u8],(Vec<NtpExtension>,Option
         parse_ntp_mac(i).map(|(rem,m)| (rem,(Vec::new(),Some(m))))
     }
     else if i.len() > 20 {
-        do_parse!(
-            i,
-            v: flat_map!(
-                take!(i.len() - 20),
-                many1!(complete!(parse_ntp_extension))
-               ) >>
-            m: parse_ntp_mac >>
-               // eof!() >>
-            ( (v,Some(m)) )
-        )
+        let (i, v) = map_parser(
+            take(i.len() - 20),
+            many1(complete(parse_ntp_extension))
+        )(i)?;
+        let (i, m) = parse_ntp_mac(i)?;
+        Ok((i, (v, Some(m))))
     } else {
-        Err(Err::Error(error_position!(i, ErrorKind::Eof)))
+        Err(Err::Error(make_error(i, ErrorKind::Eof)))
     }
 }
 
-named!(pub parse_ntp<NtpPacket>,
-   do_parse!(
-       b0:              bits!(
-                            tuple!(take_bits!(2u8),take_bits!(3u8),take_bits!(3u8))
-                        ) >>
-       stratum:         be_u8 >>
-       poll:            be_i8 >>
-       precision:       be_i8 >>
-       root_delay:      be_u32 >>
-       root_dispersion: be_u32 >>
-       ref_id:          be_u32 >>
-       ts_ref:          be_u64 >>
-       ts_orig:         be_u64 >>
-       ts_recv:         be_u64 >>
-       ts_xmit:         be_u64 >>
-       ext_and_auth:    parse_extensions_and_auth >>
-       (
-           NtpPacket {
-               li:b0.0,
-               version:b0.1,
-               mode:NtpMode(b0.2),
-               stratum,
-               poll,
-               precision,
-               root_delay,
-               root_dispersion,
-               ref_id,
-               ts_ref,
-               ts_orig,
-               ts_recv,
-               ts_xmit,
-               extensions: ext_and_auth.0,
-               auth: ext_and_auth.1
-           }
-   ))
-);
+pub fn parse_ntp(i: &[u8]) -> IResult<&[u8], NtpPacket> {
+    let (i, b0) = bits::<_, _, Error<_>, _, _>(
+        |d| tuple((
+            b_take(2u8), b_take(3u8), b_take(3u8)
+        ))(d)
+    )(i)?;
+    let (i, stratum) = be_u8(i)?;
+    let (i, poll) = be_i8(i)?;
+    let (i, precision) = be_i8(i)?;
+    let (i, root_delay) = be_u32(i)?;
+    let (i, root_dispersion) = be_u32(i)?;
+    let (i, ref_id) = be_u32(i)?;
+    let (i, ts_ref) = be_u64(i)?;
+    let (i, ts_orig) = be_u64(i)?;
+    let (i, ts_recv) = be_u64(i)?;
+    let (i, ts_xmit) = be_u64(i)?;
+    let (i, ext_and_auth) = parse_extensions_and_auth(i)?;
+    let packet = NtpPacket {
+        li: b0.0,
+        version: b0.1,
+        mode: NtpMode(b0.2),
+        stratum,
+        poll,
+        precision,
+        root_delay,
+        root_dispersion,
+        ref_id,
+        ts_ref,
+        ts_orig,
+        ts_recv,
+        ts_xmit,
+        extensions: ext_and_auth.0,
+        auth: ext_and_auth.1
+    };
+    Ok((i, packet))
+}
 
 #[cfg(test)]
 mod tests {
     use crate::ntp::*;
 
-static NTP_REQ1: &'static [u8] = &[
+static NTP_REQ1: &[u8] = &[
     0xd9, 0x00, 0x0a, 0xfa, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x02, 0x90,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -183,7 +178,7 @@ fn test_ntp_packet_simple() {
     assert_eq!(res, Ok((empty,expected)));
 }
 
-static NTP_REQ2: &'static [u8] = &[
+static NTP_REQ2: &[u8] = &[
     0x23, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0c, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -217,7 +212,7 @@ fn test_ntp_packet_mac() {
     assert_eq!(res, Ok((empty,expected)));
 }
 
-static NTP_REQ2B: &'static [u8] = &[
+static NTP_REQ2B: &[u8] = &[
     0x23, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0c, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
