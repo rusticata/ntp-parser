@@ -15,6 +15,7 @@ ntp-parser is a parser for the NTP protocol.
 
 - Upgrade to nom 6
 - Convert all macro-based parsers to functions
+- Convert to nom-derive
 
 ### 0.4.0
 
