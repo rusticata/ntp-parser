@@ -1,10 +1,16 @@
 use nom::bytes::streaming::take;
-use nom::combinator::{complete, map_parser};
+use nom::combinator::{complete, map, map_parser, opt};
 use nom::error::{make_error, ErrorKind};
 use nom::multi::many1;
 use nom::number::streaming::be_u8;
 pub use nom::{Err, IResult};
 use nom_derive::Nom;
+
+#[derive(Debug, PartialEq)]
+pub enum NtpPacket<'a> {
+    V3(NtpV3Packet<'a>),
+    V4(NtpV4Packet<'a>),
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Nom)]
 pub struct NtpMode(pub u8);
@@ -21,8 +27,34 @@ impl NtpMode {
     pub const Private: NtpMode = NtpMode(7);
 }
 
+/// An NTP version 3 packet
 #[derive(Debug, PartialEq, Nom)]
-pub struct NtpPacket<'a> {
+pub struct NtpV3Packet<'a> {
+    #[nom(PreExec = "let (i, b0) = be_u8(i)?;")]
+    #[nom(Value(b0 >> 6))]
+    pub li: u8,
+    #[nom(Value((b0 >> 3) & 0b111))]
+    pub version: u8,
+    #[nom(Value(NtpMode(b0 & 0b111)))]
+    pub mode: NtpMode,
+    pub stratum: u8,
+    pub poll: i8,
+    pub precision: i8,
+    pub root_delay: u32,
+    pub root_dispersion: u32,
+    pub ref_id: u32,
+    pub ts_ref: u64,
+    pub ts_orig: u64,
+    pub ts_recv: u64,
+    pub ts_xmit: u64,
+
+    #[nom(Parse = "opt(complete(take(12usize)))")]
+    pub authenticator: Option<&'a [u8]>,
+}
+
+/// An NTP version 4 packet
+#[derive(Debug, PartialEq, Nom)]
+pub struct NtpV4Packet<'a> {
     #[nom(PreExec = "let (i, b0) = be_u8(i)?;")]
     #[nom(Value(b0 >> 6))]
     pub li: u8,
@@ -47,7 +79,7 @@ pub struct NtpPacket<'a> {
     pub auth: Option<NtpMac<'a>>,
 }
 
-impl<'a> NtpPacket<'a> {
+impl<'a> NtpV4Packet<'a> {
     pub fn get_precision(&self) -> f32 {
         2.0_f32.powf(self.precision as f32)
     }
@@ -98,9 +130,27 @@ fn try_parse_extensions(i: &[u8]) -> IResult<&[u8], Vec<NtpExtension>> {
     map_parser(take(i.len() - 20), many1(complete(parse_ntp_extension)))(i)
 }
 
+/// Parse an NTP version 3 packet (RFC 1305)
+#[inline]
+pub fn parse_ntpv3(i: &[u8]) -> IResult<&[u8], NtpV3Packet> {
+    NtpV3Packet::parse(i)
+}
+
+/// Parse an NTP version 4 packet (RFC 1305)
+#[inline]
+pub fn parse_ntpv4(i: &[u8]) -> IResult<&[u8], NtpV4Packet> {
+    NtpV4Packet::parse(i)
+}
+
+/// Parse an NTP packet, version 3 or 4
 #[inline]
 pub fn parse_ntp(i: &[u8]) -> IResult<&[u8], NtpPacket> {
-    NtpPacket::parse(i)
+    let (_, b0) = be_u8(i)?;
+    match (b0 >> 3) & 0b111 {
+        3 => map(NtpV3Packet::parse, NtpPacket::V3)(i),
+        4 => map(NtpV4Packet::parse, NtpPacket::V4)(i),
+        _ => Err(Err::Error(make_error(i, ErrorKind::Tag))),
+    }
 }
 
 #[cfg(test)]
@@ -118,7 +168,7 @@ mod tests {
     fn test_ntp_packet_simple() {
         let empty = &b""[..];
         let bytes = NTP_REQ1;
-        let expected = NtpPacket {
+        let expected = NtpV4Packet {
             li: 3,
             version: 3,
             mode: NtpMode::SymmetricActive,
@@ -135,7 +185,7 @@ mod tests {
             extensions: Vec::new(),
             auth: None,
         };
-        let res = parse_ntp(&bytes);
+        let res = parse_ntpv4(&bytes);
         assert_eq!(res, Ok((empty, expected)));
     }
 
@@ -151,7 +201,7 @@ mod tests {
     fn test_ntp_packet_mac() {
         let empty = &b""[..];
         let bytes = NTP_REQ2;
-        let expected = NtpPacket {
+        let expected = NtpV4Packet {
             li: 0,
             version: 4,
             mode: NtpMode::Client,
@@ -171,7 +221,7 @@ mod tests {
                 mac: &bytes[52..],
             }),
         };
-        let res = parse_ntp(&bytes);
+        let res = parse_ntpv4(&bytes);
         assert_eq!(res, Ok((empty, expected)));
     }
 
@@ -187,7 +237,7 @@ mod tests {
     fn test_ntp_packet_extension() {
         let empty = &b""[..];
         let bytes = NTP_REQ2B;
-        let expected = NtpPacket {
+        let expected = NtpV4Packet {
             li: 0,
             version: 4,
             mode: NtpMode::Client,
@@ -211,7 +261,39 @@ mod tests {
                 mac: &bytes[56..],
             }),
         };
-        let res = parse_ntp(&bytes);
+        let res = parse_ntpv4(&bytes);
+        assert_eq!(res, Ok((empty, expected)));
+    }
+
+    // from wireshark test captures 'ntp.pcap'
+    static NTPV3_REQ: &[u8] = &[
+        0x1b, 0x04, 0x06, 0xf5, 0x00, 0x00, 0x10, 0x0d, 0x00, 0x00, 0x05, 0x57, 0x82, 0xdc, 0x18,
+        0x18, 0xba, 0x29, 0x66, 0x36, 0x7d, 0xd0, 0x00, 0x00, 0xba, 0x29, 0x66, 0x36, 0x7d, 0x58,
+        0x40, 0x00, 0xba, 0x29, 0x66, 0x36, 0x7d, 0xd0, 0x00, 0x00, 0xba, 0x29, 0x66, 0x76, 0x7d,
+        0x50, 0x50, 0x00,
+    ];
+
+    #[test]
+    fn test_ntp_packet_v3() {
+        let empty = &b""[..];
+        let bytes = NTPV3_REQ;
+        let expected = NtpV3Packet {
+            li: 0,
+            version: 3,
+            mode: NtpMode::Client,
+            stratum: 4,
+            poll: 6,
+            precision: -11,
+            root_delay: 4109,
+            root_dispersion: 0x0557,
+            ref_id: 0x82dc1818,
+            ts_ref: 0xba296636_7dd00000,
+            ts_orig: 0xba296636_7d584000,
+            ts_recv: 0xba296636_7dd00000,
+            ts_xmit: 0xba296676_7d505000,
+            authenticator: None,
+        };
+        let res = NtpV3Packet::parse(&bytes);
         assert_eq!(res, Ok((empty, expected)));
     }
 }

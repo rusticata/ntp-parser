@@ -21,6 +21,7 @@ This crate mostly serves as a demo/example crate for network protocol parsers wr
 - Upgrade to nom 6
 - Convert all macro-based parsers to functions
 - Convert to nom-derive
+- Add support for NTP version 3, update function names to match version
 
 ### 0.4.0
 
