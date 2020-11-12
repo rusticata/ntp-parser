@@ -1,3 +1,5 @@
+<!-- cargo-sync-readme start -->
+
 # ntp-parser
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE-MIT)
@@ -8,6 +10,9 @@
 ## Overview
 
 ntp-parser is a parser for the NTP protocol.
+
+This crate mostly serves as a demo/example crate for network protocol parsers written using nom, and nom-derive.
+<!-- cargo-sync-readme end -->
 
 ## Changes
 
