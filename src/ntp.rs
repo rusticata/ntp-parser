@@ -4,7 +4,7 @@ use nom::error::{make_error, ErrorKind};
 use nom::multi::many1;
 use nom::number::streaming::be_u8;
 pub use nom::{Err, IResult};
-use nom_derive::Nom;
+use nom_derive::*;
 
 #[derive(Debug, PartialEq)]
 pub enum NtpPacket<'a> {
