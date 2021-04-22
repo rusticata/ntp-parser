@@ -75,7 +75,7 @@ pub struct NtpV4Packet<'a> {
 
     #[nom(Parse = "try_parse_extensions")]
     pub extensions: Vec<NtpExtension<'a>>,
-    #[nom(Cond(i.len() > 0))]
+    #[nom(Cond(!i.is_empty()))]
     pub auth: Option<NtpMac<'a>>,
 }
 
