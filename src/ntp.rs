@@ -12,7 +12,7 @@ pub enum NtpPacket<'a> {
     V4(NtpV4Packet<'a>),
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Nom)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, NomBE)]
 pub struct NtpMode(pub u8);
 
 #[allow(non_upper_case_globals)]
@@ -28,7 +28,7 @@ impl NtpMode {
 }
 
 /// An NTP version 3 packet
-#[derive(Debug, PartialEq, Nom)]
+#[derive(Debug, PartialEq, NomBE)]
 pub struct NtpV3Packet<'a> {
     #[nom(PreExec = "let (i, b0) = be_u8(i)?;")]
     #[nom(Value(b0 >> 6))]
@@ -53,7 +53,7 @@ pub struct NtpV3Packet<'a> {
 }
 
 /// An NTP version 4 packet
-#[derive(Debug, PartialEq, Nom)]
+#[derive(Debug, PartialEq, NomBE)]
 pub struct NtpV4Packet<'a> {
     #[nom(PreExec = "let (i, b0) = be_u8(i)?;")]
     #[nom(Value(b0 >> 6))]
@@ -85,7 +85,7 @@ impl<'a> NtpV4Packet<'a> {
     }
 }
 
-#[derive(Debug, PartialEq, Nom)]
+#[derive(Debug, PartialEq, NomBE)]
 pub struct NtpExtension<'a> {
     pub field_type: u16,
     pub length: u16,
@@ -94,7 +94,7 @@ pub struct NtpExtension<'a> {
     /*padding*/
 }
 
-#[derive(Debug, PartialEq, Nom)]
+#[derive(Debug, PartialEq, NomBE)]
 pub struct NtpMac<'a> {
     pub key_id: u32,
     #[nom(Parse = "take(16usize)")]
