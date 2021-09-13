@@ -16,6 +16,10 @@ This crate mostly serves as a demo/example crate for network protocol parsers wr
 
 ## Changes
 
+### 0.6.0
+
+- Upgrade to nom 7
+
 ### 0.5.0
 
 - Upgrade to nom 6
