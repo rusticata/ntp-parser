@@ -102,7 +102,7 @@ pub struct NtpMac<'a> {
 }
 
 #[inline]
-pub fn parse_ntp_extension(i: &[u8]) -> IResult<&[u8], NtpExtension> {
+pub fn parse_ntp_extension(i: &[u8]) -> IResult<&[u8], NtpExtension<'_>> {
     NtpExtension::parse(i)
 }
 
@@ -118,7 +118,7 @@ pub fn parse_ntp_extension(i: &[u8]) -> IResult<&[u8], NtpExtension> {
 //  if >  20, ext + MAC
 //  if ==  0, nothing
 //  else      error
-fn try_parse_extensions(i: &[u8]) -> IResult<&[u8], Vec<NtpExtension>> {
+fn try_parse_extensions(i: &[u8]) -> IResult<&[u8], Vec<NtpExtension<'_>>> {
     if i.is_empty() || i.len() == 20 {
         // if empty, or if remaining length is exactly the MAC length (20), assume we do not have
         // extensions
@@ -132,19 +132,19 @@ fn try_parse_extensions(i: &[u8]) -> IResult<&[u8], Vec<NtpExtension>> {
 
 /// Parse an NTP version 3 packet (RFC 1305)
 #[inline]
-pub fn parse_ntpv3(i: &[u8]) -> IResult<&[u8], NtpV3Packet> {
+pub fn parse_ntpv3(i: &[u8]) -> IResult<&[u8], NtpV3Packet<'_>> {
     NtpV3Packet::parse(i)
 }
 
 /// Parse an NTP version 4 packet (RFC 1305)
 #[inline]
-pub fn parse_ntpv4(i: &[u8]) -> IResult<&[u8], NtpV4Packet> {
+pub fn parse_ntpv4(i: &[u8]) -> IResult<&[u8], NtpV4Packet<'_>> {
     NtpV4Packet::parse(i)
 }
 
 /// Parse an NTP packet, version 3 or 4
 #[inline]
-pub fn parse_ntp(i: &[u8]) -> IResult<&[u8], NtpPacket> {
+pub fn parse_ntp(i: &[u8]) -> IResult<&[u8], NtpPacket<'_>> {
     let (_, b0) = be_u8(i)?;
     match (b0 >> 3) & 0b111 {
         3 => map(NtpV3Packet::parse, NtpPacket::V3)(i),
