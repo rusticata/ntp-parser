@@ -185,7 +185,7 @@ mod tests {
             extensions: Vec::new(),
             auth: None,
         };
-        let res = parse_ntpv4(&bytes);
+        let res = parse_ntpv4(bytes);
         assert_eq!(res, Ok((empty, expected)));
     }
 
@@ -221,7 +221,7 @@ mod tests {
                 mac: &bytes[52..],
             }),
         };
-        let res = parse_ntpv4(&bytes);
+        let res = parse_ntpv4(bytes);
         assert_eq!(res, Ok((empty, expected)));
     }
 
@@ -261,7 +261,7 @@ mod tests {
                 mac: &bytes[56..],
             }),
         };
-        let res = parse_ntpv4(&bytes);
+        let res = parse_ntpv4(bytes);
         assert_eq!(res, Ok((empty, expected)));
     }
 
@@ -293,7 +293,7 @@ mod tests {
             ts_xmit: 0xba296676_7d505000,
             authenticator: None,
         };
-        let res = NtpV3Packet::parse(&bytes);
+        let res = NtpV3Packet::parse(bytes);
         assert_eq!(res, Ok((empty, expected)));
     }
 }
