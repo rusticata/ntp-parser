@@ -1,18 +1,20 @@
-<!-- cargo-sync-readme start -->
-
-# ntp-parser
-
+![Maintenance](https://img.shields.io/badge/maintenance-activly--developed-brightgreen.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE-MIT)
 [![Apache License 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE-APACHE)
 [![Build Status](https://travis-ci.org/rusticata/ntp-parser.svg?branch=master)](https://travis-ci.org/rusticata/ntp-parser)
 [![Crates.io Version](https://img.shields.io/crates/v/ntp-parser.svg)](https://crates.io/crates/ntp-parser)
+
+<!-- cargo-rdme start -->
+
+# ntp-parser
 
 ## Overview
 
 ntp-parser is a parser for the NTP protocol.
 
 This crate mostly serves as a demo/example crate for network protocol parsers written using nom, and nom-derive.
-<!-- cargo-sync-readme end -->
+
+<!-- cargo-rdme end -->
 
 ## Changes
 
